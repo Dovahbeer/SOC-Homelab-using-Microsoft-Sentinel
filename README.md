@@ -26,11 +26,13 @@ We want to create a network for the virtual machines to communicate on but also 
 
 **Name**: VMnet.
 - **Windows VM**:
-  - Ip-address:  192.168.20.10
-  - Subnet mask: 255.255.255.0
+  - Adapter 1:
+    - Ip-address:  192.168.20.10
+    - Subnet mask: 255.255.255.0
 
 - **Kali Linux VM**:
-  - Ip-address:  192.168.20.20
-  - Subnet mask: 255.255.255.0
+  - Adapter 1:
+    - Ip-address:  192.168.20.20
+    - Subnet mask: 255.255.255.0
 
 💡 *In a real design it's better to adjust the subnet mask to the amount of ip-addresses that are necessary, but in a homelab /24 will be sufficient enough for our purposes.*
