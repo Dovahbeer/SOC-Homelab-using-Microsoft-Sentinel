@@ -92,7 +92,63 @@ This setup generates a high amount of warnings:
 
 ### Windows Defender
 
-# Step 5 - Setting up log transmission to Sentinel.
+In order to proceed, we need to RDP into the virtual machine. Since I'm running Windows 10 I only need to press the window key and enter RDP in the search bar.
+
+<img width="331" height="97" alt="image" src="https://github.com/user-attachments/assets/9502d319-ed14-4160-96e6-f2e652afb593" />
+
+We will then connect to the public IP-address that was assigned to the VM:
+<img width="926" height="462" alt="image" src="https://github.com/user-attachments/assets/ef844694-f3a6-4525-a152-abb3cc6bb4cc" />
+
+Enter the credentials for the VM and you're set. If you for whatever reason have lost or forgotten these credentials you can reset it by navigating to Virtual Machines --> (Virtual machine name) --> Help --> Reset password.
+
+<img width="454" height="309" alt="image" src="https://github.com/user-attachments/assets/6f227673-adce-41e2-b026-3ebef56ca3db" />
+
+Now the firewall needs to be configured so hackers can attempt to get access to our VM and generate some logs for us. We navigate
+
+- Windows button -->
+     - "wf.msc" -->
+          - Windows Defender Firewall Properties -->
+             - Firewall state "On" --> "Off"
+                  - Apply --> OK
+
+Naturally this generates a warning from Windows. We ping the public IP-address of the VM from our own personal computer to verify that it's exposed to the internet. 
+
+<img width="441" height="122" alt="image" src="https://github.com/user-attachments/assets/2adcef25-fabe-4cdf-a7ee-fd154f5909f0" />
+
+👾*Bug encounter: I could not ping the VM even after configuring the NGS and Windows Defender. I resolved it by doing the following command in Powershell in the VM:*
+
+*netsh advfirewall firewall add rule name="ICMP Allow" protocol=icmpv4 dir=in action=allow*
+
+*This allowed me to successfully ping the VM.*
+
+# Step 5 - Event viewer & Setting up log transmission to Sentinel.
+
+### Event Viewer
+
+Since our VM is up and security configurations allow practically anyone with a computer to attempt to connect to our VM, we're already generating attempts at this point of the lab. Now we need a SIEM solution to collect these log and present them in a way that's readable for us to process.
+
+First we'll confirm that we're feasible logs by generating a few ourselves.
+
+<img width="444" height="258" alt="image" src="https://github.com/user-attachments/assets/0396243e-f612-4a7f-9e9d-9a8528245d4d" />
+
+The name will allow us to easily find the logs, and then we'll just do a few attempts with incorrect passwords to generate failed logons. Afterwards we'll proceed to the VM and view Event Viewer --> Windows Logs --> Security.
+
+<img width="1348" height="815" alt="image" src="https://github.com/user-attachments/assets/e48bdb92-886d-4524-92aa-95d5822f9022" />
+
+We can extract some information from our failed login attempt:
+
+<img width="809" height="1056" alt="image" src="https://github.com/user-attachments/assets/b4828cbd-74d5-41bc-8170-ce960dfa5559" />
+
+
+1. The username that attempted to log into the device.
+2. Description of the failure reason.
+3. Name of the computer, the public IP-address and port used, both concealed for this exercise.
+4. Time of date of the event.
+5. Category and keyword of the incidents.
+6. The computer (or this case, VM) that access was attempted towards.
+
+We're also able to recognize that **Event ID 4648** means a successfull login attempt and **Event ID 4625** means a failed login attempt. Knowing this we can filter out the noise and find relevant logs.
+
 
 # Step 6 - Analyzing a few logs.
 
