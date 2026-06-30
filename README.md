@@ -1,5 +1,5 @@
 # SOC Homelab
-### STATUS: 🔴 In Progress
+### STATUS: 🔴 In Progress, 90% completed.
 ### Disclaimer
 As this is one of my earlier projects there will be parts that addresses even the most basic fundemental concepts. This ensures that I've managed to adequately understand and explain each step of the process for myself and hopefully clearly enough for you!
 
@@ -234,28 +234,76 @@ let WindowsEvents = SecurityEvent
    
    | order by TimeGenerated desc
    
-   | evaluate ipv4_lookup/GeoIPDB_FULL, IpAddress, network);
+   | evaluate ipv4_lookup(GeoIPDB_FULL, IpAddress, network);
    
 WindowsEvents
 
-| project Timegenerated, Computer, AttackerIp = IpAddress, cityname, countryname, latitude, longitude
+| project TimeGenerated, Computer, AttackerIp = IpAddress, cityname, countryname, latitude, longitude
+
+And this query gives us a better summary than our previous simple one:
+
+<img width="1376" height="772" alt="image" src="https://github.com/user-attachments/assets/1cbcb70b-9cd2-46ac-a420-9b444ff21a65" />
 
 
 ### Workbook & Dashboard
-While we can view our logs neatly through KQL queries, it's useful to be able to review them collectively and visually. To do so we need to navigate towards workbooks in Microsoft Azure.
+While we can view our logs neatly through KQL queries, it's useful to be able to review them collectively and visually. To do so we need to navigate towards workbooks through our LAW:
 
-- Microsoft Sentinel
-     - (Name of sentinel)
-          - Threat management
+- Log Analytics workspaces
+     - (Name of our LAW)
+          - Monitoring
                - Workbooks
+We'll create a new workbook and delete the existing query items:
 
-Again, workbooks have been moved over to Microsoft Defender but functions the same. Create a new workbook and remove the existing elements. We're going to import an already existing workbook from [here](https://drive.google.com/file/d/1ErlVEK5cQjpGyOcu4T02xYy7F31dWuir/view). We'll proceed as follows:
+<img width="1888" height="629" alt="image" src="https://github.com/user-attachments/assets/e20289fa-f4d8-4409-b87a-c40ea6ce3947" />
 
-- Add
-    - Add data source + visualization
-         - Advanced editor
+Afterwards we'll click "Add" and select "Add Query". Import the following:
 
-In here we'll wipe the existing query and replace it with our own.
+let GeoIPDB_FULL = _GetWatchlist("GeoIP");
+
+
+SecurityEvent
+
+| where EventID == 4625
+
+| evaluate ipv4_lookup(GeoIPDB_FULL, IpAddress, network)
+
+| where isnotempty(latitude) and isnotempty(longitude)
+
+| extend Latitude = todouble(latitude),
+         Longitude = todouble(longitude)
+         
+| summarize FailureCount = count()
+    by IpAddress, Latitude, Longitude, cityname, countryname
+
+| extend countryname = strcat(cityname, " (", countryname, ")")
+
+| project FailureCount, Latitude, Longitude, countryname
+
+We'll set the visualization to Map:
+
+<img width="1066" height="683" alt="image" src="https://github.com/user-attachments/assets/175788c6-da97-4f07-972e-43540a06f796" />
+
+And lastly change "Metric Label" to countryname:
+
+<img width="1089" height="757" alt="image" src="https://github.com/user-attachments/assets/c3bcd302-7973-4ba8-911a-e2eaf0ef4a34" />
+
+We'll save and review our dashboard!
+
+### The Final Product
+
+<img width="1034" height="371" alt="image" src="https://github.com/user-attachments/assets/f49da33f-c27c-4bbf-ac7b-6c00ebdee95b" />
+
+
+We have completed the lab and can now provide the following:
+
+- Login attempts by users on our VM which includes
+- Information such as IP-addresses, countries, name of the device used etc.
+- Visualize these attempts:
+     - As structured logs with summarized information.
+     - Visual map indicating the geographical locations with highest attempts.
+- Utilized several of Microsoft tools:
+     - Created a resource group, VMnet, Windows VM, LAW, Sentinel and NSG.
+     - Encountered and solved several bugs due to outdated guidelines and continous update of the Microsoft landscape.
 
 # What I've learned. 📝
 
